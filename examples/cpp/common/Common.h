@@ -41,6 +41,19 @@
 #include <map>
 #include <unordered_map>
 #include <stdint.h>
+#include <GL/glew.h>
+
+#include <OVR_CAPI.h>
+#include <OVR_CAPI_GL.h>
+#define OGLPLUS_NO_INHERITED_CONSTRUCTORS 1
+#define OGLPLUS_NO_NOEXCEPT 1
+#define OGLPLUS_NO_GLFUNC_CHECKS 1
+#define OGLPLUS_NO_VARIADIC_TEMPLATES 1
+#define OGLPLUS_NO_DEFAULTED_FUNCTIONS 1
+#define OGLPLUS_NO_SITE_CONFIG
+#include <oglplus/all.hpp>
+#include <oglplus/interop/glm.hpp>
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,10 +61,6 @@
 #include <glm/gtc/noise.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtx/norm.hpp>
-#include <GL/glew.h>
-
-#include <OVR_CAPI.h>
-#include <OVR_CAPI_GL.h>
 
 #include <GlDebug.h>
 #include <GlMethods.h>

@@ -5,16 +5,17 @@
 #include <boost/thread/locks.hpp>
 
 #define TEXTURES 6
-// #define LATENCY_TEST
-
+typedef boost::thread Thread;
+typedef boost::mutex Mutex;
+typedef boost::lock_guard<Mutex> Lock;
 
 template <class T>
 class CaptureHandler {
 protected:
   volatile bool frameChanged{ false };
   volatile bool stop{ false };
-  boost::mutex frameMutex;
-  boost::thread captureThread;
+  Mutex frameMutex;
+  Thread captureThread;
   T captureResult;
 
   CaptureHandler() {
@@ -166,7 +167,7 @@ protected:
       }
       static cv::Mat frame;
       videoCapture.retrieve(frame);
-      boost::lock_guard < boost::mutex > lock(frameMutex);
+      Lock lock(frameMutex);
       cv::flip(frame, captureResult, 0);
       frameChanged = true;
     }

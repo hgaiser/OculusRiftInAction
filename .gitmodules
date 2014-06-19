@@ -25,3 +25,6 @@
 [submodule "examples/python"]
 	path = examples/python
 	url = https://github.com/jherico/pyovr-examples.git
+[submodule "libraries/oglplus"]
+	path = libraries/oglplus
+	url = ../oglplus/

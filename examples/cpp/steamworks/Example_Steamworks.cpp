@@ -1,5 +1,5 @@
 #include "Common.h"
-#include "steamvr.h"
+#include <steamvr.h>
 
 typedef gl::Texture<GL_TEXTURE_2D, GL_RG32F> DispTex;
 typedef DispTex::Ptr DispTexPtr;

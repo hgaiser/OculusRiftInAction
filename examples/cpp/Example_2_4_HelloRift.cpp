@@ -1,11 +1,27 @@
 #include "Common.h"
 #include <OVR_CAPI_GL.h>
 
+typedef std::shared_ptr<oglplus::Context> ContextPtr;
+typedef std::shared_ptr<oglplus::VertexShader> VertexShaderPtr;
+typedef std::shared_ptr<oglplus::FragmentShader> FragmentShaderPtr;
+typedef std::shared_ptr<oglplus::Program> ProgramPtr;
+typedef std::shared_ptr<oglplus::VertexArray> VertexArrayPtr;
+
 #define DISTORT
 class HelloRift : public GlfwApp {
 protected:
   ovrHmd                        hmd;
   ovrHmdDesc                    hmdDesc;
+
+  // wrapper around the current OpenGL context
+  oglplus::Context gl;
+  VertexShaderPtr vs;
+  FragmentShaderPtr fs;
+  ProgramPtr prog;
+  // A vertex array object for the rendered triangle
+  VertexArrayPtr vao;
+
+
 
   ovrEyeRenderDesc              eyes[2];
   gl::FrameBufferWrapper        frameBuffers[2];
@@ -50,11 +66,21 @@ public:
     glfwWindowHint(GLFW_DECORATED, 0);
     createWindow(windowSize, windowPosition);
     GLint sampleCount;
+    
     glGetIntegerv(GL_SAMPLES, &sampleCount);
 
     if (glfwGetWindowAttrib(window, GLFW_DECORATED)) {
       FAIL("Unable to create undecorated window");
     }
+  }
+
+  static std::string getResourceString(Resource res) {
+    size_t size = Resources::getResourceSize(res);
+    char * data = new char[size];
+    Resources::getResourceData(res, data);
+    std::string result(data, size);
+    delete[] data;
+    return result;
   }
 
   void initGl() {
@@ -120,8 +146,8 @@ public:
   void draw() {
     static int frameIndex = 0;
     ovrHmd_BeginFrame(hmd, frameIndex++);
-    glClearColor(0, 1, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
+    gl.ClearColor(0, 1, 0, 1);
+    gl.Clear().ColorBuffer().DepthBuffer(); //glClear(GL_COLOR_BUFFER_BIT);
     GL_CHECK_ERROR;
 
     for_each_eye([&](ovrEyeType eye) {

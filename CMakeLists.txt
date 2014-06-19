@@ -133,7 +133,6 @@ LINK_DIRECTORIES( C:\\dev\\boost_1_55_0_32\\lib32-msvc-12.0 )
 # functionality.  
 # OpenCV is OPTIONAL.  
 
-
 find_package( OpenCV QUIET)
 if (OpenCV_FOUND) 
     include_directories(${OpenCV_INCLUDE_DIRS})
@@ -180,6 +179,9 @@ list(APPEND EXAMPLE_LIBS ${CMAKE_THREAD_LIBS_INIT} )
 add_subdirectory(libraries/gl)
 set_target_properties(gl PROPERTIES FOLDER "Examples/Shared")
 include_directories(${CMAKE_SOURCE_DIR}/libraries/gl)
+
+include_directories(${CMAKE_SOURCE_DIR}/libraries/oglplus/include)
+include_directories(${CMAKE_SOURCE_DIR}/libraries/oglplus/implement)
 
 
 ###############################################################################

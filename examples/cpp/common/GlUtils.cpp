@@ -22,6 +22,8 @@
 // This is a library for 3D mesh decompression
 #include <openctmpp.h>
 #include <unordered_map>
+#include <oglplus/shapes/cube.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #ifdef HAVE_OPENCV
 
@@ -740,25 +742,102 @@ gl::GeometryPtr GlUtils::getColorCubeGeometry() {
 }
 
 
-void GlUtils::drawColorCube(bool lit) {
-  // These hold the vertices, indices and the binding between the
-  // Shader variable names and the values loaded into video memory
-  /*
-  static GeometryPtr cubeGeometry(
-      new Geometry(getCubeVertices(), getCubeIndices(),
-      CUBE_FACE_COUNT * TRIANGLES_PER_FACE, 0));
-  static GeometryPtr cubeWireGeometry(
-      new Geometry(getCubeVertices(), getCubeWireIndices(),
-      CUBE_EDGE_COUNT * VERTICES_PER_EDGE, 0));
-      */
-  Resource vertexShader = lit ? Resource::SHADERS_LITCOLORED_VS :
-    Resource::SHADERS_COLORED_VS;
-  Resource fragmentShader = lit ? Resource::SHADERS_LITCOLORED_FS :
-    Resource::SHADERS_COLORED_FS;
+static std::string getResourceString(Resource res) {
+  size_t size = Resources::getResourceSize(res);
+  char * data = new char[size];
+  Resources::getResourceData(res, data);
+  std::string result(data, size);
+  delete[] data;
+  return result;
+}
 
-  const gl::ProgramPtr & renderProgram = GlUtils::getProgram(
-      Resource::SHADERS_COLORED_VS, Resource::SHADERS_COLORED_FS);
-  GlUtils::renderGeometry(getColorCubeGeometry(), renderProgram);
+typedef std::shared_ptr<oglplus::VertexShader> VertexShaderPtr;
+typedef std::shared_ptr<oglplus::FragmentShader> FragmentShaderPtr;
+typedef std::shared_ptr<oglplus::Program> ProgramPtr;
+typedef std::shared_ptr<oglplus::VertexArray> VertexArrayPtr;
+
+const ProgramPtr & getProgram2(Resource vsr, Resource fsr) {
+  typedef std::unordered_map<Resource, VertexShaderPtr> VMap;
+  typedef std::unordered_map<Resource, FragmentShaderPtr> FMap;
+  typedef std::unordered_map<std::string, ProgramPtr> ProgramMap;
+
+  static VMap vShaders;
+  static FMap fShaders;
+  static ProgramMap programs;
+  gl::shader_error lastError(0, "none");
+  VertexShaderPtr & vs = vShaders[vsr];
+  FragmentShaderPtr & fs = fShaders[fsr];
+
+  std::string key = Resources::getResourcePath(vsr) + ":" +
+    Resources::getResourcePath(fsr);
+
+  try {
+    bool relink = (!vs || !fs);
+    if (relink || programs.end() == programs.find(key)) {
+      std::cerr << "Relinking " + key << std::endl;
+      vs = VertexShaderPtr(new oglplus::VertexShader());
+      vs->Source(getResourceString(Resource::SHADERS_COLORED_VS));
+      vs->Compile();
+      fs = FragmentShaderPtr(new oglplus::FragmentShader());
+      fs->Source(getResourceString(Resource::SHADERS_COLORED_FS));
+      fs->Compile();
+      ProgramPtr & prog = programs[key];
+      prog = ProgramPtr(new oglplus::Program());
+      // attach the shaders to the program
+      prog->AttachShader(*vs);
+      prog->AttachShader(*fs);
+      // link and use it
+      prog->Link();
+    }
+  }
+  catch (const gl::shader_error & error) {
+    lastError = error;
+  }
+  if (!programs[key]) {
+    throw lastError;
+  }
+  const ProgramPtr & ptr = programs[key];
+  GL_CHECK_ERROR;
+  return ptr;
+}
+
+void GlUtils::drawColorCube(bool lit) {
+  static bool setup = false;
+  using namespace oglplus;
+  static Buffer cube_verts;
+  static VertexArray cube;
+  static shapes::Cube make_cube;
+  static shapes::DrawingInstructions cube_instr(make_cube.Instructions());
+  static shapes::Cube::IndexArray cube_indices(make_cube.Indices());
+  if (!setup) {
+    setup = true;
+    cube.Bind();
+    cube_verts.Bind(oglplus::Buffer::Target::Array);
+    std::vector<GLfloat> data;
+    GLuint n_per_vertex = make_cube.Positions(data);
+    // upload the data
+    Buffer::Data(Buffer::Target::Array, data);
+    // setup the vertex attribs array for the vertices
+    VertexArrayAttrib attr(gl::Attribute::Position);
+    attr.Setup<GLfloat>(n_per_vertex);
+    attr.Enable();
+    oglplus::NoVertexArray().Bind();
+    oglplus::NoBuffer().Bind(oglplus::Buffer::Target::ElementArray);
+    oglplus::NoBuffer().Bind(oglplus::Buffer::Target::Array);
+  }
+
+  const ProgramPtr & renderProgram = getProgram2(SHADERS_SIMPLE_VS, SHADERS_COLORED_FS);
+  renderProgram->Use();
+
+  oglplus::Mat4f prm(glm::value_ptr(glm::mat4()), 16);
+  oglplus::Uniform<oglplus::Mat4f>(*renderProgram, "Projection").Set(prm); 
+  oglplus::Mat4f mvm(glm::value_ptr(gl::Stacks::modelview().top()), 16);
+  oglplus::Uniform<oglplus::Mat4f>(*renderProgram, "ModelView").Set(mvm);
+
+  cube.Bind();
+  cube_instr.Draw(cube_indices);
+  oglplus::NoVertexArray().Bind();
+  oglplus::NoBuffer().Bind(oglplus::Buffer::Target::ElementArray);
 }
 
 void GlUtils::drawAngleTicks() {
@@ -797,7 +876,7 @@ void GlUtils::drawAngleTicks() {
 
   // Fix the modelview at exactly 1 unit away from the origin, no rotation
   gl::Stacks::modelview().push(glm::mat4(1)).translate(glm::vec3(0, 0, -1));
-  ProgramPtr program = getProgram(Resource::SHADERS_SIMPLE_VS, Resource::SHADERS_COLORED_FS);
+  gl::ProgramPtr program = getProgram(Resource::SHADERS_SIMPLE_VS, Resource::SHADERS_COLORED_FS);
   program->use();
   renderGeometry(g, program);
   gl::Stacks::modelview().pop();
