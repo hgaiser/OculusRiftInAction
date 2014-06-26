@@ -5,6 +5,7 @@ class Chapter_5: public RiftGlfwApp
 {
 protected:
   gl::ProgramPtr program;
+  gl::ProgramPtr wireProgram;
   gl::GeometryPtr cube;
   gl::GeometryPtr wireCube;
 

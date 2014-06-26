@@ -16,6 +16,9 @@ void Chapter_5::initGl() {
   program = GlUtils::getProgram(
       Resource::SHADERS_LITCOLORED_VS,
       Resource::SHADERS_LITCOLORED_FS);
+  wireProgram = GlUtils::getProgram(
+    Resource::SHADERS_SIMPLE_VS,
+    Resource::SHADERS_COLORED_FS);
   cube = GlUtils::getColorCubeGeometry();
   wireCube = GlUtils::getWireCubeGeometry();
 
@@ -75,11 +78,9 @@ void Chapter_5::resetCamera() {
       GlUtils::Y_AXIS);               // Camera up axis
 }
 
-void Chapter_5::drawChapter5Scene() {
-  program->use();
-  gl::Stacks::lights().apply(*program);
-  gl::Stacks::projection().apply(*program);
 
+template <typename Function>
+void drawScene(float eyeHeight, float ipd, Function render) {
   // Draw arches made of cubes.
   for (int x = -10; x <= 10; x++) {
     for (int y = 0; y <= 10; y++) {
@@ -87,7 +88,7 @@ void Chapter_5::drawChapter5Scene() {
         glm::vec3 pos(x, y, z);
         float len = glm::length(pos);
         if (len > 11 && len < 12) {
-          drawCube(pos);
+          render(pos, GlUtils::ONE);
         }
       }
     }
@@ -96,41 +97,48 @@ void Chapter_5::drawChapter5Scene() {
   // Draw a floor made of cubes.
   for (int x = -12; x <= 12; x++) {
     for (int z = -12; z <= 12; z++) {
-      drawCube(glm::vec3(x, -0.5f, z));
+      render(glm::vec3(x, -0.5f, z), GlUtils::ONE);
     }
   }
 
   // Draw a single cube at the center of the room, at eye height,
   // and put it on a pedestal.
-  drawCube(glm::vec3(0, eyeHeight, 0), glm::vec3(ipd));
-  drawCube(glm::vec3(0, eyeHeight / 2, 0), glm::vec3(ipd / 2, eyeHeight, ipd / 2));
+  render(glm::vec3(0, eyeHeight, 0), glm::vec3(ipd));
+  render(glm::vec3(0, eyeHeight / 2, 0), glm::vec3(ipd / 2, eyeHeight, ipd / 2));
+}
 
+
+void Chapter_5::drawChapter5Scene() {
+  gl::MatrixStack & mv = gl::Stacks::modelview();
+  gl::MatrixStack & pv = gl::Stacks::projection();
+
+  program->use();
+  gl::Stacks::lights().apply(*program);
+  gl::Stacks::projection().apply(*program);
+  cube->bindVertexArray();
+  drawScene(eyeHeight, ipd, [&](const glm::vec3 & tr, const glm::vec3 & sc){
+    mv.push().translate(tr).scale(sc).apply(*program).pop();
+    cube->draw();
+  });
+  cube->unbindVertexArray();
+
+  wireProgram->use();
+  gl::Stacks::lights().apply(*wireProgram);
+  gl::Stacks::projection().apply(*wireProgram);
+  wireProgram->setUniform("Color", glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
+  wireCube->bindVertexArray();
+  pv.withPush([&]{
+    pv.top() = glm::translate(glm::mat4(), glm::vec3(0, 0, -0.00001)) * pv.top();
+    pv.apply(*wireProgram);
+    drawScene(eyeHeight, ipd, [&](const glm::vec3 & tr, const glm::vec3 & sc){
+      mv.push().translate(tr).scale(sc).apply(*wireProgram).pop();
+      wireCube->draw();
+    });
+  });
+  wireCube->unbindVertexArray();
   gl::VertexArray::unbind();
   gl::Program::clear();
 }
 
 void Chapter_5::drawCube(const glm::vec3 & translate, const glm::vec3 & scale) {
-  gl::MatrixStack & mv = gl::Stacks::modelview();
-  gl::Stacks::with_push(mv, [&]{
-    mv.translate(translate);
-    mv.scale(scale);
-
-    // Solid cube
-    mv.apply(*program);
-    cube->bindVertexArray();
-    cube->draw();
-    cube->unbindVertexArray();
-
-    // Wire frame
-    // Dolly the camera forward a smidge to offset the z-buffer
-    gl::MatrixStack & pv = gl::Stacks::projection();
-    gl::Stacks::with_push(pv, [&]{
-      pv.top() = glm::translate(glm::mat4(), glm::vec3(0, 0, -0.00001)) * pv.top();
-      pv.apply(*program);
-      wireCube->bindVertexArray();
-      wireCube->draw();
-      wireCube->unbindVertexArray();
-    });
-    pv.apply(*program);
-  });
 }
