@@ -24,11 +24,9 @@ void Chapter_5::initGl() {
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_LINE_SMOOTH);
+  //glEnable(GL_LINE_SMOOTH);
   glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-  glLineWidth(4);
   glClearColor(0.65f, 0.65f, 0.65f, 1);
-
   gl::Stacks::lights().addLight(glm::vec4(50, 50, 50, 1));
 }
 
@@ -78,9 +76,13 @@ void Chapter_5::resetCamera() {
       GlUtils::Y_AXIS);               // Camera up axis
 }
 
+typedef std::vector<glm::mat4> VecXfm;
 
-template <typename Function>
-void drawScene(float eyeHeight, float ipd, Function render) {
+VecXfm buildCubeScene(float eyeHeight, float ipd) {
+  VecXfm result;
+  gl::MatrixStack & mv = gl::Stacks::modelview();
+  mv.push().identity();
+
   // Draw arches made of cubes.
   for (int x = -10; x <= 10; x++) {
     for (int y = 0; y <= 10; y++) {
@@ -88,7 +90,7 @@ void drawScene(float eyeHeight, float ipd, Function render) {
         glm::vec3 pos(x, y, z);
         float len = glm::length(pos);
         if (len > 11 && len < 12) {
-          render(pos, GlUtils::ONE);
+          result.push_back(glm::translate(glm::mat4(), pos));
         }
       }
     }
@@ -97,45 +99,67 @@ void drawScene(float eyeHeight, float ipd, Function render) {
   // Draw a floor made of cubes.
   for (int x = -12; x <= 12; x++) {
     for (int z = -12; z <= 12; z++) {
-      render(glm::vec3(x, -0.5f, z), GlUtils::ONE);
+      result.push_back(glm::translate(glm::mat4(), glm::vec3(x, -0.5f, z)));
     }
   }
 
   // Draw a single cube at the center of the room, at eye height,
   // and put it on a pedestal.
-  render(glm::vec3(0, eyeHeight, 0), glm::vec3(ipd));
-  render(glm::vec3(0, eyeHeight / 2, 0), glm::vec3(ipd / 2, eyeHeight, ipd / 2));
+  result.push_back(glm::scale(glm::translate(glm::mat4(), glm::vec3(0, eyeHeight, 0)), glm::vec3(ipd)));
+  result.push_back(glm::scale(glm::translate(glm::mat4(), glm::vec3(0, eyeHeight / 2, 0)), glm::vec3(ipd / 2, eyeHeight, ipd / 2)));
+  return result;
 }
 
+void addInstanceVertexBuffer() {
+  for (int i = 0; i < 4; ++i) {
+    int pos = gl::Attribute::InstanceTransform + i;
+    int stride = sizeof(GLfloat) * 4 * 4;
+    int offset = sizeof(GLfloat) * 4 * i;
+    glEnableVertexAttribArray(pos);
+    glVertexAttribPointer(pos, 4, GL_FLOAT, GL_FALSE, stride, (void*)offset);
+    glVertexAttribDivisor(pos, 1);
+  }
+}
 
 void Chapter_5::drawChapter5Scene() {
   gl::MatrixStack & mv = gl::Stacks::modelview();
   gl::MatrixStack & pv = gl::Stacks::projection();
 
+  static int cubeCount;
+  static gl::VertexBufferPtr cubeTransforms; 
+  if (!cubeTransforms) {
+    VecXfm foo = buildCubeScene(eyeHeight, ipd);
+    cubeTransforms = gl::VertexBufferPtr(new gl::VertexBuffer(foo));
+    cubeCount = foo.size();
+
+    cubeTransforms->bind();
+    cube->bindVertexArray();
+    cube->addInstanceVertexArray();
+
+    cubeTransforms->bind();
+    wireCube->bindVertexArray();
+    wireCube->addInstanceVertexArray();
+
+    gl::VertexArray::unbind();
+  }
+  glDisable(GL_LINE_SMOOTH);
+
   program->use();
+  program->setUniform("InstanceTransformActive", 1);
+  cube->bindVertexArray();
   gl::Stacks::lights().apply(*program);
   gl::Stacks::projection().apply(*program);
-  cube->bindVertexArray();
-  drawScene(eyeHeight, ipd, [&](const glm::vec3 & tr, const glm::vec3 & sc){
-    mv.push().translate(tr).scale(sc).apply(*program).pop();
-    cube->draw();
-  });
-  cube->unbindVertexArray();
+  gl::Stacks::modelview().apply(*program);
+  cube->drawInstanced(cubeCount);
 
   wireProgram->use();
-  gl::Stacks::lights().apply(*wireProgram);
-  gl::Stacks::projection().apply(*wireProgram);
+  wireProgram->setUniform("InstanceTransformActive", 1);
   wireProgram->setUniform("Color", glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
   wireCube->bindVertexArray();
-  pv.withPush([&]{
-    pv.top() = glm::translate(glm::mat4(), glm::vec3(0, 0, -0.00001)) * pv.top();
-    pv.apply(*wireProgram);
-    drawScene(eyeHeight, ipd, [&](const glm::vec3 & tr, const glm::vec3 & sc){
-      mv.push().translate(tr).scale(sc).apply(*wireProgram).pop();
-      wireCube->draw();
-    });
-  });
-  wireCube->unbindVertexArray();
+  gl::Stacks::modelview().apply(*wireProgram);
+  gl::Stacks::projection().push().preTranslate(glm::vec3(0, 0, -0.00001)).apply(*wireProgram).pop();
+  //wireCube->drawInstanced(cubeCount);
+
   gl::VertexArray::unbind();
   gl::Program::clear();
 }
