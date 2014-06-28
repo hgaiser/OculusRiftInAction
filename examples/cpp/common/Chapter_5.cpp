@@ -22,11 +22,14 @@ void Chapter_5::initGl() {
   cube = GlUtils::getColorCubeGeometry();
   wireCube = GlUtils::getWireCubeGeometry();
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_LINE_SMOOTH);
+  glDisable(GL_BLEND);
+  //glEnable(GL_BLEND);
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   //glEnable(GL_LINE_SMOOTH);
-  glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+  //glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
   glClearColor(0.65f, 0.65f, 0.65f, 1);
+
   gl::Stacks::lights().addLight(glm::vec4(50, 50, 50, 1));
 }
 
@@ -110,17 +113,6 @@ VecXfm buildCubeScene(float eyeHeight, float ipd) {
   return result;
 }
 
-void addInstanceVertexBuffer() {
-  for (int i = 0; i < 4; ++i) {
-    int pos = gl::Attribute::InstanceTransform + i;
-    int stride = sizeof(GLfloat) * 4 * 4;
-    int offset = sizeof(GLfloat) * 4 * i;
-    glEnableVertexAttribArray(pos);
-    glVertexAttribPointer(pos, 4, GL_FLOAT, GL_FALSE, stride, (void*)offset);
-    glVertexAttribDivisor(pos, 1);
-  }
-}
-
 void Chapter_5::drawChapter5Scene() {
   gl::MatrixStack & mv = gl::Stacks::modelview();
   gl::MatrixStack & pv = gl::Stacks::projection();
@@ -142,7 +134,6 @@ void Chapter_5::drawChapter5Scene() {
 
     gl::VertexArray::unbind();
   }
-  glDisable(GL_LINE_SMOOTH);
 
   program->use();
   program->setUniform("InstanceTransformActive", 1);
@@ -158,7 +149,7 @@ void Chapter_5::drawChapter5Scene() {
   wireCube->bindVertexArray();
   gl::Stacks::modelview().apply(*wireProgram);
   gl::Stacks::projection().push().preTranslate(glm::vec3(0, 0, -0.00001)).apply(*wireProgram).pop();
-  //wireCube->drawInstanced(cubeCount);
+  wireCube->drawInstanced(cubeCount);
 
   gl::VertexArray::unbind();
   gl::Program::clear();
