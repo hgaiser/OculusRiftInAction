@@ -57,10 +57,3 @@ endfunction()
 
 make_examples(*.cpp "Examples")
 
-if (OpenCV_FOUND) 
-    make_examples(opencv/*.cpp "Examples/OpenCV")
-endif()
-
-if (STEAMWORKS_FOUND) 
-    make_examples(steamworks/*.cpp  "Examples/Steamworks")
-endif()

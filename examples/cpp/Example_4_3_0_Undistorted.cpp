@@ -1,13 +1,13 @@
 #include "Common.h"
-#include <fstream>
-#include <sys/types.h>
-#include <sys/stat.h>
 
-using namespace std;
+Resource SCENE_IMAGES_DK1[2] = {
+  Resource::IMAGES_TUSCANY_UNDISTORTED_LEFT_DK1_PNG,
+  Resource::IMAGES_TUSCANY_UNDISTORTED_RIGHT_DK1_PNG
+};
 
-Resource SCENE_IMAGES[2] = {
-  Resource::IMAGES_TUSCANY_UNDISTORTED_LEFT_PNG,
-  Resource::IMAGES_TUSCANY_UNDISTORTED_RIGHT_PNG
+Resource SCENE_IMAGES_DK2[2] = {
+  Resource::IMAGES_TUSCANY_UNDISTORTED_LEFT_DK2_PNG,
+  Resource::IMAGES_TUSCANY_UNDISTORTED_RIGHT_DK2_PNG
 };
 
 class UndistortedExample : public RiftGlfwApp {
@@ -19,7 +19,6 @@ protected:
 
 public:
   virtual ~UndistortedExample() {
-    ovrHmd_Destroy(hmd);
   }
 
   void initGl() {
@@ -36,8 +35,13 @@ public:
     quadGeometry = GlUtils::getQuadGeometry();
     quadGeometry->bindVertexArray();
 
+    Resource * sceneImages = SCENE_IMAGES_DK2;
+    if (hmd->Type == ovrHmd_DK1) {
+      sceneImages = SCENE_IMAGES_DK1;
+    }
+
     for_each_eye([&](ovrEyeType eye) {
-      GlUtils::getImageAsTexture(textures[eye], SCENE_IMAGES[eye]);
+      GlUtils::getImageAsTexture(textures[eye], sceneImages[eye]);
     });
   }
 

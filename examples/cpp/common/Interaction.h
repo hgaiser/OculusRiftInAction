@@ -24,6 +24,7 @@ class CameraControl {
   bool spacemouseEnabled;
   bool joystickEnabled;
   glm::ivec3 keyboardTranslate;
+  glm::ivec3 keyboardRotate;
 
   CameraControl();
   public:
@@ -32,7 +33,7 @@ class CameraControl {
   void enableHydra(bool enable = true);
   void enableSpacemouse(bool enable = true);
   void enableJoystick(bool enable = true);
-  bool onKey(glm::mat4 & camera, int key, int scancode, int action, int mods);
+  bool onKey(int key, int scancode, int action, int mods);
 
 };
 
@@ -137,7 +138,7 @@ public:
   void read() {
     if (glfwJoystickPresent(glfwIndex)) {
       int axisCount = 0;
-      const float * joyAxes = glfwGetJoystickAxes(0, &axisCount);
+      const float * joyAxes = glfwGetJoystickAxes(glfwIndex, &axisCount);
       if (axisCount != axes.size()) {
         axes.resize(axisCount);
       }
@@ -155,7 +156,7 @@ public:
       memcpy(&axes[0], joyAxes, sizeof(float) * axisCount);
       int buttonCount = 0;
       const uint8_t * joyButtons =
-          glfwGetJoystickButtons(0, &buttonCount);
+        glfwGetJoystickButtons(glfwIndex, &buttonCount);
 
       //    {
       //      std::string buttonReport;
@@ -182,11 +183,10 @@ enum Enum {
   LEFT_X = 0,
   LEFT_Y = 1,
 
-  RIGHT_X = 3,
-  RIGHT_Y = 4,
+  TRIGGER = 2,
 
-  LEFT_TRIGGER = 2,
-  RIGHT_TRIGGER = 5,
+  RIGHT_Y = 3,
+  RIGHT_X = 4,
 };
 } // namespace Axis
 
@@ -212,8 +212,10 @@ enum Enum {
 class Controller : public GlfwJoystick {
 public:
   Controller(unsigned int glfwIndex) : GlfwJoystick(glfwIndex) {
-//    calibration[Axis::RIGHT_X] = Ptr(new AxisCalibration(true));
-//    calibration[Axis::RIGHT_Y] = Ptr(new AxisCalibration(true));
+    calibration[Axis::RIGHT_X] = Ptr(new AxisCalibration(true));
+    calibration[Axis::RIGHT_Y] = Ptr(new AxisCalibration(true));
+    calibration[Axis::LEFT_X] = Ptr(new AxisCalibration(false, 0, 0.05f));
+    calibration[Axis::LEFT_Y] = Ptr(new AxisCalibration(false, 0, 0.05f));
   }
 };
 

@@ -1,75 +1,85 @@
 #include "Common.h"
-#include "OVR_CAPI_GL.h"
 
-Resource SCENE_IMAGES[2] = {
-  Resource::IMAGES_TUSCANY_UNDISTORTED_LEFT_PNG,
-  Resource::IMAGES_TUSCANY_UNDISTORTED_RIGHT_PNG
+Resource SCENE_IMAGES_DK1[2] = {
+  Resource::IMAGES_TUSCANY_UNDISTORTED_LEFT_DK1_PNG,
+  Resource::IMAGES_TUSCANY_UNDISTORTED_RIGHT_DK1_PNG
 };
 
+Resource SCENE_IMAGES_DK2[2] = {
+  Resource::IMAGES_TUSCANY_UNDISTORTED_LEFT_DK2_PNG,
+  Resource::IMAGES_TUSCANY_UNDISTORTED_RIGHT_DK2_PNG
+};
 
 class DistortedExample : public RiftGlfwApp {
 protected:
   gl::Texture2dPtr sceneTextures[2];
   ovrTexture eyeTextures[2];
-  ovrEyeRenderDesc eyeRenderDescs[2];
 
 public:
-  virtual ~DistortedExample() {
-    ovrHmd_Destroy(hmd);
-  }
-
+  
   void initGl() {
     RiftGlfwApp::initGl();
-    glDisable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
-    glClearColor(0.1f, 1.1f, 0.1f, 1.0f);
 
-    ovrFovPort eyeFovPorts[2];
+    Resource * sceneImages = SCENE_IMAGES_DK2;
+    if (hmd->Type == ovrHmd_DK1) {
+      sceneImages = SCENE_IMAGES_DK1;
+    }
+
     for_each_eye([&](ovrEyeType eye){
-      ovrTextureHeader & eyeTextureHeader = eyeTextures[eye].Header;
-      memset(eyeTextures + eye, 0, sizeof(eyeTextures[eye]));
-        eyeFovPorts[eye] = hmdDesc.DefaultEyeFov[eye];
-      eyeTextureHeader.TextureSize = 
-        ovrHmd_GetFovTextureSize(hmd, eye, hmdDesc.DefaultEyeFov[eye], 1.0f);
-      eyeTextureHeader.RenderViewport.Size = eyeTextureHeader.TextureSize;
-      eyeTextureHeader.RenderViewport.Pos.x = 0;
-      eyeTextureHeader.RenderViewport.Pos.y = 0;
+      glm::uvec2 textureSize;
+      GlUtils::getImageAsTexture(sceneTextures[eye],
+        sceneImages[eye], textureSize);
+
+      memset(eyeTextures + eye, 0,
+        sizeof(eyeTextures[eye]));
+
+      ovrTextureHeader & eyeTextureHeader =
+        eyeTextures[eye].Header;
+
+      eyeTextureHeader.TextureSize = Rift::toOvr(textureSize);
+      eyeTextureHeader.RenderViewport.Size =
+        eyeTextureHeader.TextureSize;
+
       eyeTextureHeader.API = ovrRenderAPI_OpenGL;
-      sceneTextures[eye] = 
-        GlUtils::getImageAsTexture(SCENE_IMAGES[eye]);
+
       ((ovrGLTextureData&)eyeTextures[eye]).TexId =
         sceneTextures[eye]->texture;
     });
 
-    ovrRenderAPIConfig cfg; memset(&cfg, 0, sizeof(cfg));
-    cfg.Header.API = ovrRenderAPI_OpenGL;
-    cfg.Header.RTSize = hmdDesc.Resolution;
-    cfg.Header.Multisample = 1;
+    ovrRenderAPIConfig config;
+    memset(&config, 0, sizeof(config));
+    config.Header.API = ovrRenderAPI_OpenGL;
+    config.Header.RTSize = Rift::toOvr(windowSize);
+    config.Header.Multisample = 1;
+#if defined(OVR_OS_WIN32)
+    ((ovrGLConfigData&)config).Window = 0;
+#elif defined(OVR_OS_LINUX)
+    ((ovrGLConfigData&)config).Win = 0;
+    ((ovrGLConfigData&)config).Disp = 0;
+#endif
 
-    int distortionCaps = ovrDistortionCap_Chromatic 
-      | ovrDistortionCap_TimeWarp
-      | ovrDistortionCap_NoSwapBuffers;
-    int configResult = ovrHmd_ConfigureRendering(hmd, &cfg, 
-      distortionCaps, eyeFovPorts, eyeRenderDescs);
+    int distortionCaps = 
+      ovrDistortionCap_Vignette
+      | ovrDistortionCap_Chromatic;
+
+    ovrEyeRenderDesc eyeRenderDescs[2];
+    int configResult = ovrHmd_ConfigureRendering(hmd, &config,
+      distortionCaps, hmd->DefaultEyeFov, eyeRenderDescs);
     if (0 == configResult) {
       FAIL("Unable to configure rendering");
     }
+    ovrhmd_EnableHSWDisplaySDKRender(hmd, false);
+  }
+
+  virtual void finishFrame() {
   }
 
   void draw() {
     static int frameIndex = 0;
-    ovrHmd_BeginFrame(hmd, frameIndex++);
+    static ovrPosef poses[2];
     glClear(GL_COLOR_BUFFER_BIT);
-    for_each_eye([&](ovrEyeType eye) {
-      ovrPosef renderPose = ovrHmd_BeginEyeRender(hmd, eye);
-      Sleep(9);
-      ovrHmd_EndEyeRender(hmd, eye, renderPose, &eyeTextures[eye]);
-    });
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    ovrHmd_EndFrame(hmd);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
+    ovrHmd_BeginFrame(hmd, frameIndex++);
+    ovrHmd_EndFrame(hmd, poses, eyeTextures);
   }
 };
 

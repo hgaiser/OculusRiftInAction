@@ -22,8 +22,6 @@
 // This is a library for 3D mesh decompression
 #include <openctmpp.h>
 #include <unordered_map>
-#include <oglplus/shapes/cube.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #ifdef HAVE_OPENCV
 
@@ -222,8 +220,7 @@ const glm::vec3 CUBE_FACE_COLORS[] = { //
         Colors::magenta, };
 
 // 6 sides * 2 triangles * 3 vertices
-const GLuint CUBE_INDICES[
-CUBE_FACE_COUNT * TRIANGLES_PER_FACE * VERTICES_PER_TRIANGLE] = { //
+const GLuint CUBE_INDICES[CUBE_FACE_COUNT * TRIANGLES_PER_FACE * VERTICES_PER_TRIANGLE] = { //
     0, 1, 2, 2, 1, 3, // X Positive
     2, 3, 6, 6, 3, 7, // X Negative
     6, 7, 4, 4, 7, 5, // Y Positive
@@ -232,52 +229,21 @@ CUBE_FACE_COUNT * TRIANGLES_PER_FACE * VERTICES_PER_TRIANGLE] = { //
     4, 0, 6, 6, 0, 2, // Z Negative
 };
 
-const unsigned int CUBE_WIRE_INDICES[CUBE_EDGE_COUNT * VERTICES_PER_EDGE] =
-    { //
-    0, 1, 1, 2, 2, 3, 3, 0, // square
-    4, 5, 5, 6, 6, 7, 7, 4, // facing square
+const unsigned int CUBE_WIRE_INDICES[CUBE_EDGE_COUNT * VERTICES_PER_EDGE] = { //
+    0, 1, 1, 3, 3, 2, 2, 0, // square
+    4, 5, 5, 7, 7, 6, 6, 4, // facing square
     0, 4, 1, 5, 2, 6, 3, 7, // transverse lines
-    };
+};
 
-//
-//// Mirror Z style
-//const glm::vec3 QUAD_VERTICES[4] = { //
-//  glm::vec3(-1, -1, 0),
-//  glm::vec3(+1, -1, 0),
-//  glm::vec3(-1, +1, 0),
-//  glm::vec3(+1, +1, 0),
-//};
-//
-//// Triangle strip
-//const GLuint QUAD_INDICES[4] = { //
-//    0, 1, 2, 3
-//};
 
 const glm::vec3 GlUtils::X_AXIS = glm::vec3(1.0f, 0.0f, 0.0f);
 const glm::vec3 GlUtils::Y_AXIS = glm::vec3(0.0f, 1.0f, 0.0f);
 const glm::vec3 GlUtils::Z_AXIS = glm::vec3(0.0f, 0.0f, 1.0f);
 const glm::vec3 GlUtils::ORIGIN = glm::vec3(0.0f, 0.0f, 0.0f);
+const glm::vec3 GlUtils::ONE = glm::vec3(1.0f, 1.0f, 1.0f);
 const glm::vec3 GlUtils::UP = glm::vec3(0.0f, 1.0f, 0.0f);
 
-//VertexBufferPtr GlUtils::getQuadVertices() {
-//  VertexBufferPtr result(new VertexBuffer());
-//  // Create the buffers for the texture quad we will draw
-//  result->bind();
-//  (*result) << gl::makeArrayLoader(QUAD_VERTICES);
-//  result->unbind();
-//  GL_CHECK_ERROR;
-//  return result;
-//}
-//
-//IndexBufferPtr GlUtils::getQuadIndices() {
-//  IndexBufferPtr result(new IndexBuffer());
-//  result->bind();
-//  (*result) << gl::makeArrayLoader(QUAD_INDICES);
-//  result->unbind();
-//  GL_CHECK_ERROR;
-//  return result;
-//}
-//
+
 gl::VertexBufferPtr getCubeVertices() {
   gl::VertexBufferPtr result(new gl::VertexBuffer());
   // Create the buffers for the texture quad we will draw
@@ -690,154 +656,65 @@ void GlUtils::renderRift() {
 
 
 void GlUtils::drawQuad(const glm::vec2 & min, const glm::vec2 & max) {
-  glBegin(GL_QUADS);
-  glVertex2f(min.x, min.y);
-  glVertex2f(max.x, min.y);
-  glVertex2f(max.x, max.y);
-  glVertex2f(min.x, max.y);
-  glEnd();
+  using namespace gl;
+  static GeometryPtr g;
+  if (!g) {
+    Mesh m;
+    m.addVertex(glm::vec3(min.x, max.y, 0));
+    m.addVertex(glm::vec3(min.x, min.y, 0));
+    m.addVertex(glm::vec3(max.x, max.y, 0));
+    m.addVertex(glm::vec3(max.x, min.y, 0));
+    g = m.getGeometry(GL_TRIANGLE_STRIP);
+  }
+  ProgramPtr program = getProgram(Resource::SHADERS_SIMPLE_VS, Resource::SHADERS_COLORED_FS);
+  renderGeometry(g, program);
 }
 
 gl::GeometryPtr GlUtils::getColorCubeGeometry() {
-  static gl::GeometryPtr  geometry;
-  if (!geometry) {
-    Mesh mesh;
-    glm::vec3 move(0, 0, 0.5f);
-    gl::MatrixStack & m = mesh.model;
+  Mesh mesh;
+  glm::vec3 move(0, 0, 0.5f);
+  gl::MatrixStack & m = mesh.model;
 
-    m.push().rotate(glm::angleAxis(PI / 2.0f, Y_AXIS)).translate(move);
-    mesh.color = Colors::red;
-    mesh.addQuad(glm::vec2(1.0));
-    mesh.fillColors(true);
-    m.pop();
+  m.push().rotate(glm::angleAxis(PI / 2.0f, Y_AXIS)).translate(move);
+  mesh.color = Colors::red;
+  mesh.addQuad(glm::vec2(1.0));
+  mesh.fillColors(true);
+  m.pop();
 
-    m.push().rotate(glm::angleAxis(-PI / 2.0f, X_AXIS)).translate(move);
-    mesh.color = Colors::green;
-    mesh.addQuad(glm::vec2(1.0));
-    m.pop();
+  m.push().rotate(glm::angleAxis(-PI / 2.0f, X_AXIS)).translate(move);
+  mesh.color = Colors::green;
+  mesh.addQuad(glm::vec2(1.0));
+  m.pop();
 
-    m.push().translate(move);
-    mesh.color = Colors::blue;
-    mesh.addQuad(glm::vec2(1.0));
-    m.pop();
+  m.push().translate(move);
+  mesh.color = Colors::blue;
+  mesh.addQuad(glm::vec2(1.0));
+  m.pop();
 
-    m.push().rotate(glm::angleAxis(-PI / 2.0f, Y_AXIS)).translate(move);
-    mesh.color = Colors::cyan;
-    mesh.addQuad(glm::vec2(1.0));
-    m.pop();
+  m.push().rotate(glm::angleAxis(-PI / 2.0f, Y_AXIS)).translate(move);
+  mesh.color = Colors::cyan;
+  mesh.addQuad(glm::vec2(1.0));
+  m.pop();
 
-    m.push().rotate(glm::angleAxis(PI / 2.0f, X_AXIS)).translate(move);
-    mesh.color = Colors::yellow;
-    mesh.addQuad(glm::vec2(1.0));
-    m.pop();
+  m.push().rotate(glm::angleAxis(PI / 2.0f, X_AXIS)).translate(move);
+  mesh.color = Colors::yellow;
+  mesh.addQuad(glm::vec2(1.0));
+  m.pop();
 
-    m.push().rotate(glm::angleAxis(-PI, X_AXIS)).translate(move);
-    mesh.color = Colors::magenta;
-    mesh.addQuad(glm::vec2(1.0));
-    m.pop();
+  m.push().rotate(glm::angleAxis(-PI, X_AXIS)).translate(move);
+  mesh.color = Colors::magenta;
+  mesh.addQuad(glm::vec2(1.0));
+  m.pop();
 
-    geometry = mesh.getGeometry();
-  }
+  gl::GeometryPtr  geometry = mesh.getGeometry();
   return geometry;
 }
 
-
-static std::string getResourceString(Resource res) {
-  size_t size = Resources::getResourceSize(res);
-  char * data = new char[size];
-  Resources::getResourceData(res, data);
-  std::string result(data, size);
-  delete[] data;
-  return result;
-}
-
-typedef std::shared_ptr<oglplus::VertexShader> VertexShaderPtr;
-typedef std::shared_ptr<oglplus::FragmentShader> FragmentShaderPtr;
-typedef std::shared_ptr<oglplus::Program> ProgramPtr;
-typedef std::shared_ptr<oglplus::VertexArray> VertexArrayPtr;
-
-const ProgramPtr & getProgram2(Resource vsr, Resource fsr) {
-  typedef std::unordered_map<Resource, VertexShaderPtr> VMap;
-  typedef std::unordered_map<Resource, FragmentShaderPtr> FMap;
-  typedef std::unordered_map<std::string, ProgramPtr> ProgramMap;
-
-  static VMap vShaders;
-  static FMap fShaders;
-  static ProgramMap programs;
-  gl::shader_error lastError(0, "none");
-  VertexShaderPtr & vs = vShaders[vsr];
-  FragmentShaderPtr & fs = fShaders[fsr];
-
-  std::string key = Resources::getResourcePath(vsr) + ":" +
-    Resources::getResourcePath(fsr);
-
-  try {
-    bool relink = (!vs || !fs);
-    if (relink || programs.end() == programs.find(key)) {
-      std::cerr << "Relinking " + key << std::endl;
-      vs = VertexShaderPtr(new oglplus::VertexShader());
-      vs->Source(getResourceString(Resource::SHADERS_COLORED_VS));
-      vs->Compile();
-      fs = FragmentShaderPtr(new oglplus::FragmentShader());
-      fs->Source(getResourceString(Resource::SHADERS_COLORED_FS));
-      fs->Compile();
-      ProgramPtr & prog = programs[key];
-      prog = ProgramPtr(new oglplus::Program());
-      // attach the shaders to the program
-      prog->AttachShader(*vs);
-      prog->AttachShader(*fs);
-      // link and use it
-      prog->Link();
-    }
-  }
-  catch (const gl::shader_error & error) {
-    lastError = error;
-  }
-  if (!programs[key]) {
-    throw lastError;
-  }
-  const ProgramPtr & ptr = programs[key];
-  GL_CHECK_ERROR;
-  return ptr;
-}
-
 void GlUtils::drawColorCube(bool lit) {
-  static bool setup = false;
-  using namespace oglplus;
-  static Buffer cube_verts;
-  static VertexArray cube;
-  static shapes::Cube make_cube;
-  static shapes::DrawingInstructions cube_instr(make_cube.Instructions());
-  static shapes::Cube::IndexArray cube_indices(make_cube.Indices());
-  if (!setup) {
-    setup = true;
-    cube.Bind();
-    cube_verts.Bind(oglplus::Buffer::Target::Array);
-    std::vector<GLfloat> data;
-    GLuint n_per_vertex = make_cube.Positions(data);
-    // upload the data
-    Buffer::Data(Buffer::Target::Array, data);
-    // setup the vertex attribs array for the vertices
-    VertexArrayAttrib attr(gl::Attribute::Position);
-    attr.Setup<GLfloat>(n_per_vertex);
-    attr.Enable();
-    oglplus::NoVertexArray().Bind();
-    oglplus::NoBuffer().Bind(oglplus::Buffer::Target::ElementArray);
-    oglplus::NoBuffer().Bind(oglplus::Buffer::Target::Array);
-  }
-
-  const ProgramPtr & renderProgram = getProgram2(SHADERS_SIMPLE_VS, SHADERS_COLORED_FS);
-  renderProgram->Use();
-
-  oglplus::Mat4f prm(glm::value_ptr(glm::mat4()), 16);
-  oglplus::Uniform<oglplus::Mat4f>(*renderProgram, "Projection").Set(prm); 
-  oglplus::Mat4f mvm(glm::value_ptr(gl::Stacks::modelview().top()), 16);
-  oglplus::Uniform<oglplus::Mat4f>(*renderProgram, "ModelView").Set(mvm);
-
-  cube.Bind();
-  cube_instr.Draw(cube_indices);
-  oglplus::NoVertexArray().Bind();
-  oglplus::NoBuffer().Bind(oglplus::Buffer::Target::ElementArray);
+  static gl::GeometryPtr cube = getColorCubeGeometry();
+  Resource fs = lit ? Resource::SHADERS_LITCOLORED_VS : Resource::SHADERS_COLORED_VS;
+  Resource vs = lit ? Resource::SHADERS_LITCOLORED_FS : Resource::SHADERS_COLORED_FS;
+  renderGeometry(cube, getProgram(fs, vs));
 }
 
 void GlUtils::drawAngleTicks() {
@@ -876,7 +753,7 @@ void GlUtils::drawAngleTicks() {
 
   // Fix the modelview at exactly 1 unit away from the origin, no rotation
   gl::Stacks::modelview().push(glm::mat4(1)).translate(glm::vec3(0, 0, -1));
-  gl::ProgramPtr program = getProgram(Resource::SHADERS_SIMPLE_VS, Resource::SHADERS_COLORED_FS);
+  ProgramPtr program = getProgram(Resource::SHADERS_SIMPLE_VS, Resource::SHADERS_COLORED_FS);
   program->use();
   renderGeometry(g, program);
   gl::Stacks::modelview().pop();
@@ -914,24 +791,6 @@ void GlUtils::draw3dGrid() {
   renderGeometry(g, program);
   GL_CHECK_ERROR;
 }
-
-//void GlUtils::drawOrigin() {
-//  lineWidth(1.0);
-//  begin(LINES);
-//    color(vec3(0.25));
-//    color(X_AXIS / 1.5f);
-//    vertex(vec3(0));
-//    vertex(X_AXIS);
-//    color(Y_AXIS / 1.5f);
-//    vertex(vec3(0));
-//    vertex(Y_AXIS);
-//    color(Z_AXIS / 1.5f);
-//    vertex(vec3(0));
-//    vertex(Z_AXIS);
-//  end();
-//}
-//
-
 
 
 void GlUtils::draw3dVector(glm::vec3 vec, const glm::vec3 & col) {
@@ -1175,6 +1034,15 @@ gl::GeometryPtr GlUtils::getCubeGeometry() {
   return cube;
 }
 
+gl::GeometryPtr GlUtils::getWireCubeGeometry() {
+  static gl::GeometryPtr wireframe = 
+      gl::GeometryPtr(new gl::Geometry(
+          getCubeVertices(),
+          getCubeWireIndices(),
+          12, 0, GL_LINES, 3));
+  return wireframe;
+}
+
 static glm::vec3 AXES[] = {
   GlUtils::X_AXIS,
   GlUtils::Y_AXIS,
@@ -1212,7 +1080,7 @@ void GlUtils::cubeRecurse(int depth, float elapsed) {
   renderProgram->use();
   gl::Stacks::projection().apply(renderProgram);
 
-  gl::GeometryPtr cubeGeometry = GlUtils::getColorCubeGeometry();
+  static gl::GeometryPtr cubeGeometry = GlUtils::getColorCubeGeometry();
   cubeGeometry->bindVertexArray();
   gl::MatrixStack & mv = gl::Stacks::modelview();
   mv.with_push([&]{
@@ -1231,7 +1099,7 @@ void GlUtils::dancingCubes(int elements, float elapsed) {
   renderProgram->use();
   gl::Stacks::projection().apply(renderProgram);
 
-  gl::GeometryPtr cubeGeometry = getColorCubeGeometry();
+  static gl::GeometryPtr cubeGeometry = getColorCubeGeometry();
   cubeGeometry->bindVertexArray();
 
   static glm::vec3 AXES[] = { GlUtils::X_AXIS, GlUtils::Y_AXIS,
@@ -1272,5 +1140,48 @@ void GlUtils::dancingCubes(int elements, float elapsed) {
     mv.pop();
   }
 
+}
 
+void GlUtils::renderFloor() {
+  using namespace gl;
+  static GeometryPtr g;
+  static float FLOOR_DIMENSION = 100.0f;
+  if (!g) {
+    Mesh m;
+    m.addTexCoord(glm::vec2(FLOOR_DIMENSION, FLOOR_DIMENSION));
+    m.addVertex(glm::vec3(FLOOR_DIMENSION, 0, FLOOR_DIMENSION));
+
+    m.addTexCoord(glm::vec2(FLOOR_DIMENSION, -FLOOR_DIMENSION));
+    m.addVertex(glm::vec3(FLOOR_DIMENSION, 0, -FLOOR_DIMENSION));
+
+    m.addTexCoord(glm::vec2(-FLOOR_DIMENSION, FLOOR_DIMENSION));
+    m.addVertex(glm::vec3(-FLOOR_DIMENSION, 0, FLOOR_DIMENSION));
+
+    m.addTexCoord(glm::vec2(-FLOOR_DIMENSION, -FLOOR_DIMENSION));
+    m.addVertex(glm::vec3(-FLOOR_DIMENSION, 0, -FLOOR_DIMENSION));
+    g = m.getGeometry(GL_TRIANGLE_STRIP);
+  }
+  static Texture2dPtr t;
+  if (!t) {
+    t = getImageAsTexture(Resource::IMAGES_FLOOR_PNG);
+    t->bind();
+    t->parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    t->parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    t->generateMipmap();
+    Texture2d::unbind();
+  }
+
+  ProgramPtr program = getProgram(Resource::SHADERS_TEXTURED_VS, Resource::SHADERS_TEXTURED_FS);
+  t->bind();
+  renderGeometry(g, program);
+  Texture2d::unbind();
+}
+
+void GlUtils::renderManikin() {
+  static gl::GeometryPtr manikin;
+  if (!manikin) {
+    manikin = GlUtils::getMesh(Resource::MESHES_MANIKIN_CTM).getGeometry();
+  }
+  static gl::ProgramPtr lit = GlUtils::getProgram(Resource::SHADERS_LIT_VS, Resource::SHADERS_LITCOLORED_FS);
+  GlUtils::renderGeometry(manikin, lit);
 }

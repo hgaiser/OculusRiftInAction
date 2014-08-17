@@ -49,9 +49,9 @@ struct Mesh {
 
   void compare(const Mesh & mesh) const {
     size_t size = positions.size();
-	size_t osize = mesh.positions.size();
+    size_t osize = mesh.positions.size();
     assert(size == osize);
-	for (size_t i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
       const glm::vec4 & pos = positions[i];
       const glm::vec4 & opos = mesh.positions[i];
       assert(pos == opos);
@@ -62,6 +62,7 @@ struct Mesh {
   void fillNormals(bool force = false);
   void addVertex(const glm::vec4 & vertex);
   void addVertex(const glm::vec3 & vertex);
+  void addTexCoord(const glm::vec2 & texCoord);
   void addMesh(const Mesh & mesh, bool populateColor = false);
   void addQuad(float width = 1.0f, float height = 1.0f);
   void addQuad(const glm::vec2 & size) {

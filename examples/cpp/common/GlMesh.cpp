@@ -104,8 +104,13 @@ void Mesh::addVertex(const glm::vec4 & vertex) {
 
 void Mesh::addVertex(const glm::vec3 & vertex) {
   positions.push_back(glm::vec4(transform(model.top(), vertex), 1));
-	indices.push_back((GLuint)indices.size());
+  indices.push_back((GLuint)indices.size());
 }
+
+void Mesh::addTexCoord(const glm::vec2 & texCoord) {
+  texCoords.push_back(texCoord);
+}
+
 
 void Mesh::addMesh(const Mesh & mesh, bool forceColor) {
   int indexOffset = positions.size();
@@ -131,38 +136,30 @@ void Mesh::addMesh(const Mesh & mesh, bool forceColor) {
   add_all_incremented(indexOffset, indices, mesh.indices);
 }
 
-//void Mesh::addMesh(const Mesh & mesh, const glm::vec3 & color) {
-//  if (colors.empty()) {
-//    colors.resize(positions.size());
-//    colors = VVec3(positions.size(), getColor());
-//  }
-//  addMesh(mesh);
-//}
-
 void Mesh::addQuad(float width, float height) {
   int indexOffset = positions.size();
   float x = width / 2.0f;
   float y = height / 2.0f;
 
+  // Positions are transformed
   VVec4 quad;
-  // C++11      { glm::vec3(-x, -y, 0), glm::vec3(x, -y, 0), glm::vec3(x, y, 0), glm::vec3(-x, y, 0),  });
   quad.push_back(glm::vec4(-x, -y, 0, 1));
   quad.push_back(glm::vec4(x, -y, 0, 1));
   quad.push_back(glm::vec4(x, y, 0, 1));
   quad.push_back(glm::vec4(-x, y, 0, 1));
-
-  // Positions are transformed
   add_all_transformed(model.top(), positions, quad);
-  if (normals.size()) {
-    // normals are transformed with only the rotation, not the translation
-    model.push().untranslate();
-    add_all_transformed(model.top(), normals, quad);
-    model.pop();
+
+  // normals are transformed only by rotation, not translation
+  VVec4 norm;
+  for (int i = 0; i < 4; i++) {
+    norm.push_back(glm::vec4(0, 0, 1, 1));
   }
+  model.push().untranslate();
+  add_all_transformed(model.top(), normals, norm);
+  model.pop();
 
   // indices are copied and incremented
   VS quadIndices;
-  // C++11 VS( { 0, 1, 2, 0, 2, 3 } );
   quadIndices.push_back(0);
   quadIndices.push_back(1);
   quadIndices.push_back(2);
@@ -172,7 +169,6 @@ void Mesh::addQuad(float width, float height) {
   add_all_incremented(indexOffset, indices, quadIndices);
 
   fillColors();
-  fillNormals();
 }
 
 void Mesh::validate() const {
@@ -220,18 +216,22 @@ gl::GeometryPtr Mesh::getGeometry(GLenum elementType) const {
   switch (elementType) {
   case GL_LINES:
     elements = (unsigned int)indices.size() / 2;
-	  verticesPerElement = 2;
-	  break;
+      verticesPerElement = 2;
+      break;
   case GL_TRIANGLES:
     elements = (unsigned int)indices.size() / 3;
-	  verticesPerElement = 3;
-	  break;
+      verticesPerElement = 3;
+      break;
+  case GL_TRIANGLE_STRIP:
+    elements = (unsigned int)indices.size();
+    verticesPerElement = 1;
+    break;
   case GL_POINTS:
     elements = (unsigned int)indices.size();
     verticesPerElement = 1;
     break;
   default:
-	  throw std::runtime_error("unsupported geometry type");
+      throw std::runtime_error("unsupported geometry type");
   }
   return gl::GeometryPtr(new gl::Geometry(vertices, indices, elements, flags, elementType, verticesPerElement));
 }

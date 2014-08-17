@@ -73,37 +73,39 @@ static glm::quat getHydraOrientation(const sixenseControllerData & c) {
 }
 #endif
 
-bool CameraControl::onKey(glm::mat4 & camera, int key, int scancode, int action, int mods) {
+bool CameraControl::onKey(int key, int scancode, int action, int mods) {
   if (GLFW_PRESS != action && GLFW_RELEASE != action) {
     return false;
   }
-
-
-  static int x = 0;
-  static int z = 0;
-  bool eatKey = false;
+  SAY("KEY %s: %c", (GLFW_PRESS == action) ? "pressed" : "released", key);
+  int update = (GLFW_PRESS == action) ? 1 : 0;
   switch (key) {
   case GLFW_KEY_A:
-    keyboardTranslate.x += (GLFW_PRESS == action) ? -1 : 1;
-    eatKey = true;
-    break;
-
+    keyboardTranslate.x = -update; return true;
   case GLFW_KEY_D:
-    keyboardTranslate.x += (GLFW_PRESS == action) ? 1 : -1;
-    eatKey = true;
-    break;
-
-  case GLFW_KEY_S:
-    keyboardTranslate.z += (GLFW_PRESS == action) ? 1 : -1;
-    eatKey = true;
-    break;
-
+    keyboardTranslate.x = update; return true;
   case GLFW_KEY_W:
-    keyboardTranslate.z += (GLFW_PRESS == action) ? -1 : 1;
-    eatKey = true;
-    break;
+    keyboardTranslate.z = -update; return true;
+  case GLFW_KEY_S:
+    keyboardTranslate.z = update; return true;
+  case GLFW_KEY_C:
+    keyboardTranslate.y = -update; return true;
+  case GLFW_KEY_F:
+    keyboardTranslate.y = update; return true;
+  case GLFW_KEY_UP:
+    keyboardRotate.x = -update; return true;
+  case GLFW_KEY_DOWN:
+    keyboardRotate.x = update; return true;
+  case GLFW_KEY_RIGHT:
+    keyboardRotate.y = -update; return true;
+  case GLFW_KEY_LEFT:
+    keyboardRotate.y = update; return true;
+  case GLFW_KEY_Q:
+    keyboardRotate.z = -update; return true;
+  case GLFW_KEY_E:
+    keyboardRotate.z = update; return true;
   }
-  return eatKey;
+  return false;
 }
 
 #ifdef HAVE_SIXENSE
@@ -191,18 +193,29 @@ void CameraControl::applyInteraction(glm::mat4 & camera) {
 //  int spnav_sensitivity(double sens);
 
 #endif
+  static bool joysetup = false;
+  static bool x52present = false;
+  static std::shared_ptr<GlfwJoystick> joystick;
 
-  if (glfwJoystickPresent(0)) {
-    static const char * joyName = glfwGetJoystickName(0);
-    static bool x52present =
-        std::string(joyName).find("X52") !=
-            std::string::npos;
-
-    static std::shared_ptr<GlfwJoystick> joystick(
-        x52present ?
-            (GlfwJoystick*)new SaitekX52Pro::Controller(0) :
-            (GlfwJoystick*)new Xbox::Controller(0)
+  if (!joysetup) {
+    joysetup = true;
+    for (int i = 0; i < 10; ++i) {
+      if (glfwJoystickPresent(i)) {
+        const char * joyName = glfwGetJoystickName(i);
+        x52present =
+          std::string(joyName).find("X52") !=
+          std::string::npos;
+        joystick = std::shared_ptr<GlfwJoystick>(
+          x52present ?
+          (GlfwJoystick*)new SaitekX52Pro::Controller(i) :
+          (GlfwJoystick*)new Xbox::Controller(i)
         );
+        break;
+      }
+    }
+  }
+
+  if (joystick) {
     joystick->read();
     glm::vec3 translation;
     glm::quat rotation;
@@ -218,7 +231,6 @@ void CameraControl::applyInteraction(glm::mat4 & camera) {
       scaleMod += 1.0f;
       scale /= scaleMod;
 
-
       translation = joystick->getCalibratedVector(
           STICK_POV_X,
           STICK_POV_Y,
@@ -229,13 +241,11 @@ void CameraControl::applyInteraction(glm::mat4 & camera) {
       rotation = glm::quat(euler / 20.0f);
     } else {
       using namespace Xbox::Axis;
-      // We invert the Z axis because of the handedness of the
-      // coordinate system
-      translation.z = -joystick->getCalibratedAxisValue(LEFT_Y) * 100.0f;
-      rotation.y = (joystick->getCalibratedAxisValue(LEFT_TRIGGER) +
-          joystick->getCalibratedAxisValue(RIGHT_TRIGGER)) / 100.0f;
+      translation.z = joystick->getCalibratedAxisValue(LEFT_Y) * 20.0f;
+      translation.x = joystick->getCalibratedAxisValue(LEFT_X) * 20.0f;
+      rotation.y = joystick->getCalibratedAxisValue(RIGHT_X) / 100.0f;
       rotation.x = joystick->getCalibratedAxisValue(RIGHT_Y) / 200.0f;
-      rotation.z = joystick->getCalibratedAxisValue(RIGHT_X) / 400.0f;
+      rotation.z = joystick->getCalibratedAxisValue(TRIGGER) / 400.0f;
     }
 
     if (glm::length(translation) > 0.01f) {
@@ -245,9 +255,20 @@ void CameraControl::applyInteraction(glm::mat4 & camera) {
     recompose(camera);
   }
 
-  //SAY("%d %d", keyboardTranslate.x, keyboardTranslate.z);
-  translateCamera(camera, glm::vec3(keyboardTranslate) / 100.0f);
-
+  static uint32_t lastKeyboardUpdateTick = 0;
+  uint32_t now = Platform::elapsedMillis();
+  if (0 != lastKeyboardUpdateTick) {
+    float dt = (now - lastKeyboardUpdateTick) / 1000.0f;
+    if (keyboardRotate.x || keyboardRotate.y || keyboardRotate.z) {
+      const glm::quat delta = glm::quat(glm::vec3(keyboardRotate) * dt);
+      rotateCamera(camera, delta);
+    }
+    if (keyboardTranslate.x || keyboardTranslate.y || keyboardTranslate.z) {
+      const glm::vec3 delta = glm::vec3(keyboardTranslate) * dt;
+      translateCamera(camera, delta);
+    }
+  }
+  lastKeyboardUpdateTick = now;
 }
 
 //

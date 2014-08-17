@@ -7,13 +7,21 @@ struct PerEyeArg {
   gl::FrameBufferWrapper        frameBuffer;
 };
 
-class CubeScene_Rift: public CubeScene {
-  PerEyeArg eyes[2];
-  int frameIndex{ 0 };
-  ovrTexture textures[2];
+class CubeScene_RiftSensors: public CubeScene {
+  PerEyeArg   eyes[2];
+  ovrTexture  textures[2];
+  int         frameIndex{ 0 };
 
 public:
-  CubeScene_Rift() {
+  CubeScene_RiftSensors() {
+    if (!ovrHmd_ConfigureTracking(hmd, 
+        ovrTrackingCap_Orientation |
+        ovrTrackingCap_Position, 0)) {
+      SAY("Warning: Unable to locate Rift sensor device.  This demo is boring now.");
+    }
+  }
+
+  virtual ~CubeScene_RiftSensors() {
   }
 
   virtual void initGl() {
@@ -28,7 +36,7 @@ public:
     int distortionCaps = ovrDistortionCap_Chromatic;
     ovrEyeRenderDesc eyeRenderDescs[2];
     int configResult = ovrHmd_ConfigureRendering(hmd, &cfg,
-        distortionCaps, hmd->DefaultEyeFov, eyeRenderDescs);
+      distortionCaps, hmd->DefaultEyeFov, eyeRenderDescs);
 
     for_each_eye([&](ovrEyeType eye){
       PerEyeArg & eyeArg = eyes[eye];
@@ -56,7 +64,8 @@ public:
 
   virtual void draw() {
     ovrHmd_BeginFrame(hmd, frameIndex++);
-    static ovrPosef eyePoses[2];
+    ovrPosef eyePoses[2];
+
     gl::MatrixStack & mv = gl::Stacks::modelview();
     for (int i = 0; i < ovrEye_Count; ++i) {
       ovrEyeType eye = hmd->EyeRenderOrder[i];
@@ -68,15 +77,15 @@ public:
       eyeArgs.frameBuffer.withFramebufferActive([&]{
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         gl::Stacks::with_push(mv, [&]{
+          mv.preMultiply(glm::inverse(Rift::fromOvr(eyePoses[eye])));
           mv.preMultiply(eyeArgs.modelviewOffset);
           drawCubeScene();
         });
       });
-
     }
 
     ovrHmd_EndFrame(hmd, eyePoses, textures);
   }
 };
 
-RUN_OVR_APP(CubeScene_Rift);
+RUN_OVR_APP(CubeScene_RiftSensors);

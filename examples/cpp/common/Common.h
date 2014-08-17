@@ -41,19 +41,6 @@
 #include <map>
 #include <unordered_map>
 #include <stdint.h>
-#include <GL/glew.h>
-
-#include <OVR_CAPI.h>
-#include <OVR_CAPI_GL.h>
-#define OGLPLUS_NO_INHERITED_CONSTRUCTORS 1
-#define OGLPLUS_NO_NOEXCEPT 1
-#define OGLPLUS_NO_GLFUNC_CHECKS 1
-#define OGLPLUS_NO_VARIADIC_TEMPLATES 1
-#define OGLPLUS_NO_DEFAULTED_FUNCTIONS 1
-#define OGLPLUS_NO_SITE_CONFIG
-#include <oglplus/all.hpp>
-#include <oglplus/interop/glm.hpp>
-
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -62,16 +49,40 @@
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtx/norm.hpp>
 
-#include <GlDebug.h>
-#include <GlMethods.h>
 
-#include <GlBuffers.h>
-#include <GlFrameBuffer.h>
-#include <GlStacks.h>
-#include <GlQuery.h>
-#include <GlShaders.h>
-#include <GlGeometry.h>
-#include <GlLighting.h>
+#pragma warning( disable : 4068 4244)
+#include <oglplus/all.hpp>
+#include <oglplus/interop/glm.hpp>
+#include <oglplus/bound/texture.hpp>
+#include <oglplus/bound/framebuffer.hpp>
+#include <oglplus/bound/renderbuffer.hpp>
+#include <oglplus/bound/buffer.hpp>
+#pragma warning( default : 4068 4244)
+
+
+#include <GL/glew.h>
+
+#include <OVR_CAPI.h>
+#include <OVR_CAPI_GL.h>
+
+
+#if defined(OVR_OS_WIN32)
+#define ON_WINDOWS(runnable) runnable()
+#else
+#define ON_WINDOWS(runnable) 
+#endif
+
+#if defined(OVR_OS_MAC)
+#define ON_MAC(runnable) runnable()
+#else
+#define ON_MAC(runnable) 
+#endif
+
+#if defined(OVR_OS_LINUX)
+#define ON_LINUX(runnable) runnable()
+#else
+#define ON_LINUX(runnable) 
+#endif
 
 #include <Resources.h>
 
@@ -161,4 +172,3 @@ public:
 
 #include "Rift.h"
 #include "OpenCV.h"
-

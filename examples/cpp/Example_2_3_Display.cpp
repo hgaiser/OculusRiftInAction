@@ -1,22 +1,19 @@
 #include "Common.h"
 
-class Display : public GlfwApp {
+class RiftDisplay : public GlfwApp {
 glm::uvec2 eyeSize;
 ovrHmd hmd;
 
 public:
-Display() {
+RiftDisplay() {
   hmd = ovrHmd_Create(0);
   if (!hmd) {
     FAIL("Unable to detect Rift display");
   }
 
-  ovrHmdDesc hmdDesc;
-  ovrHmd_GetDesc(hmd, &hmdDesc);
-
   windowPosition = glm::ivec2(
-      hmdDesc.WindowsPos.x,
-      hmdDesc.WindowsPos.y);
+      hmd->WindowsPos.x,
+      hmd->WindowsPos.y);
 
   GLFWmonitor * hmdMonitor =
       GlfwApp::getMonitorAtPosition(windowPosition);
@@ -55,4 +52,4 @@ void draw() {
 }
 };
 
-RUN_OVR_APP(Display);
+RUN_OVR_APP(RiftDisplay);

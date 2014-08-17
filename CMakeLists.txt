@@ -176,10 +176,6 @@ list(APPEND EXAMPLE_LIBS ${CMAKE_THREAD_LIBS_INIT} )
 #
 # Common GL code, using only headers.  
 #
-add_subdirectory(libraries/gl)
-set_target_properties(gl PROPERTIES FOLDER "Examples/Shared")
-include_directories(${CMAKE_SOURCE_DIR}/libraries/gl)
-
 include_directories(${CMAKE_SOURCE_DIR}/libraries/oglplus/include)
 include_directories(${CMAKE_SOURCE_DIR}/libraries/oglplus/implement)
 

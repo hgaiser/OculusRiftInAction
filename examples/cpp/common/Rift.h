@@ -19,8 +19,6 @@
 
 #pragma once
 
-//#define RIFT_MULTISAMPLE 1
-
 class Rift {
 public:
 //  static void getDefaultDk1HmdValues(ovrHmd hmd, ovrHmdDesc & ovrHmdInfo);
@@ -48,7 +46,7 @@ public:
   }
 
   static inline glm::uvec2 fromOvr(const ovrSizei & ov) {
-    return glm::uvec2(ov.h, ov.w);
+    return glm::uvec2(ov.w, ov.h);
   }
 
   static inline glm::quat fromOvr(const ovrQuatf & oq) {
@@ -56,7 +54,10 @@ public:
   }
 
   static inline glm::mat4 fromOvr(const ovrPosef & op) {
-    return glm::mat4_cast(fromOvr(op.Orientation)) * glm::translate(glm::mat4(), Rift::fromOvr(op.Position));
+    glm::mat4 orientation = glm::mat4_cast(fromOvr(op.Orientation));
+    glm::mat4 translation = glm::translate(glm::mat4(), Rift::fromOvr(op.Position));
+    return translation * orientation;
+    //  return glm::mat4_cast(fromOvr(op.Orientation)) * glm::translate(glm::mat4(), Rift::fromOvr(op.Position));
   }
 
   static inline ovrMatrix4f toOvr(const glm::mat4 & m) {
@@ -105,17 +106,23 @@ typedef RiftLookupTexture::Ptr RiftLookupTexturePtr;
 class RiftManagerApp {
 protected:
   ovrHmd hmd;
-  ovrHmdDesc hmdDesc;
 
   glm::uvec2 hmdNativeResolution;
   glm::ivec2 hmdDesktopPosition;
 
 public:
-  RiftManagerApp() {
+  RiftManagerApp(ovrHmdType defaultHmdType = ovrHmd_DK1) {
     hmd = ovrHmd_Create(0);
-    ovrHmd_GetDesc(hmd, &hmdDesc);
-    hmdNativeResolution = glm::ivec2(hmdDesc.Resolution.w, hmdDesc.Resolution.h);
-    hmdDesktopPosition = glm::ivec2(hmdDesc.WindowsPos.x, hmdDesc.WindowsPos.y);
+    if (NULL == hmd) {
+      hmd = ovrHmd_CreateDebug(defaultHmdType);
+    }
+    hmdNativeResolution = glm::ivec2(hmd->Resolution.w, hmd->Resolution.h);
+    hmdDesktopPosition = glm::ivec2(hmd->WindowsPos.x, hmd->WindowsPos.y);
+  }
+
+  virtual ~RiftManagerApp() {
+    ovrHmd_Destroy(hmd);
+    hmd = nullptr;
   }
 };
 
@@ -187,9 +194,6 @@ public:
   }
 
   virtual void createRenderingTarget() {
-#ifdef RIFT_MULTISAMPLE
-    glfwWindowHint(GLFW_SAMPLES, 4);
-#endif
 
     if (fullscreen) {
       // Fullscreen apps should use the native resolution of the Rift
@@ -201,6 +205,9 @@ public:
         FAIL("Unable to create undecorated window");
       }
     }
+  }
+
+  virtual ~RiftGlfwApp() {
   }
 
   virtual void viewport(ovrEyeType eye) {
@@ -224,9 +231,9 @@ public:
 protected:
   glm::mat4 player;
   ovrPosef  headPose;
+  ovrTexture eyeTextures[2];
 
 private:
-  ovrGLTexture eyeTextures[2];
   ovrEyeRenderDesc eyeRenderDescs[2];
   gl::FrameBufferWrapper frameBuffers[2];
   glm::mat4 projections[2];
@@ -239,10 +246,22 @@ protected:
   virtual void finishFrame();
   virtual void onKey(int key, int scancode, int action, int mods);
   virtual void draw() final;
+  virtual void postDraw() {};
   virtual void update();
   virtual void renderScene() = 0;
+
+
+
   inline ovrEyeType getCurrentEye() const {
     return currentEye;
+  }
+
+  const ovrEyeRenderDesc & getEyeRenderDesc(ovrEyeType eye) const {
+    return eyeRenderDescs[eye];
+  }
+
+  const ovrFovPort & getFov(ovrEyeType eye) const {
+    return eyeRenderDescs[eye].Fov;
   }
 
   const glm::mat4 & getPerspectiveProjection(ovrEyeType eye) const {
@@ -251,6 +270,14 @@ protected:
 
   const glm::mat4 & getOrthographicProjection(ovrEyeType eye) const {
     return orthoProjections[eye];
+  }
+
+  const ovrFovPort & getFov() const {
+    return getFov(getCurrentEye());
+  }
+
+  const ovrEyeRenderDesc & getEyeRenderDesc() const {
+    return getEyeRenderDesc(getCurrentEye());
   }
 
   const glm::mat4 & getPerspectiveProjection() const {
