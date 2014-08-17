@@ -83,26 +83,26 @@ struct Mesh {
     return attributeCount;
   }
 
-  int getFlags() const {
-    int flags = 0;
-    if (!normals.empty()) {
-      flags |= gl::Geometry::Flag::HAS_NORMAL;
-    }
-    if (!colors.empty()) {
-      flags |= gl::Geometry::Flag::HAS_COLOR;
-    }
-    if (!texCoords.empty()) {
-      flags |= gl::Geometry::Flag::HAS_TEXTURE;
-    }
-    return flags;
-  }
+  //int getFlags() const {
+  //  int flags = 0;
+  //  if (!normals.empty()) {
+  //    flags |= gl::Geometry::Flag::HAS_NORMAL;
+  //  }
+  //  if (!colors.empty()) {
+  //    flags |= gl::Geometry::Flag::HAS_COLOR;
+  //  }
+  //  if (!texCoords.empty()) {
+  //    flags |= gl::Geometry::Flag::HAS_TEXTURE;
+  //  }
+  //  return flags;
+  //}
 
   std::vector<glm::vec4> buildVertices() const;
 
   // Converts an in CPU memory mesh to an in GPU memory
   // geometry object (represented as some gl buffers and
   // a vertex array object
-  gl::GeometryPtr getGeometry(GLenum elementType = GL_TRIANGLES) const;
+  //gl::GeometryPtr getGeometry(GLenum elementType = GL_TRIANGLES) const;
 };
 
 typedef std::shared_ptr<Mesh> MeshPtr;

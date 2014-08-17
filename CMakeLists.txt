@@ -125,15 +125,15 @@ set_target_properties(OpenCTM PROPERTIES FOLDER "3rdparty")
 include_directories(${CMAKE_SOURCE_DIR}/libraries/OpenCTM)
 list(APPEND EXAMPLE_LIBS OpenCTM)
 
-find_package( Boost QUIET)
-include_directories(${Boost_INCLUDE_DIRS})
-LINK_DIRECTORIES( C:\\dev\\boost_1_55_0_32\\lib32-msvc-12.0 )
+#find_package( Boost QUIET)
+#include_directories(${Boost_INCLUDE_DIRS})
+#LINK_DIRECTORIES( C:\\dev\\boost_1_55_0_32\\lib32-msvc-12.0 )
 
 # Computer vision library with advanced image loading and manipulation 
 # functionality.  
 # OpenCV is OPTIONAL.  
 
-find_package( OpenCV QUIET)
+#find_package( OpenCV QUIET)
 if (OpenCV_FOUND) 
     include_directories(${OpenCV_INCLUDE_DIRS})
     list(APPEND EXAMPLE_LIBS ${OpenCV_LIBS})
@@ -176,7 +176,15 @@ list(APPEND EXAMPLE_LIBS ${CMAKE_THREAD_LIBS_INIT} )
 #
 # Common GL code, using only headers.  
 #
+set(OGLPLUS_CONFIG_SET_LOW_PROFILE 0)
+set(OGLPLUS_USE_BOOST_CONFIG 0)
+set(OGLPLUS_USE_GLEW 0)
+set(OGLPLUS_USE_GLCOREARB_H 0)
+set(OGLPLUS_USE_GL3_H 0)
+set(OGLPLUS_USE_GL3W 0)
+add_subdirectory(${CMAKE_SOURCE_DIR}/libraries/oglplus)
 include_directories(${CMAKE_SOURCE_DIR}/libraries/oglplus/include)
+include_directories(${CMAKE_BINARY_DIR}/libraries/oglplus/include)
 include_directories(${CMAKE_SOURCE_DIR}/libraries/oglplus/implement)
 
 

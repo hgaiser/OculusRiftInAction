@@ -25,7 +25,7 @@
 
 class GlfwApp {
 protected:
-  gl::TimeQueryPtr query;
+//  gl::TimeQueryPtr query;
   GLFWwindow *  window;
   glm::uvec2    windowSize;
   glm::ivec2    windowPosition;

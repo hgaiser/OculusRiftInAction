@@ -100,9 +100,6 @@ public:
 
 };
 
-typedef gl::Texture<GL_TEXTURE_2D, GL_RG16F> RiftLookupTexture;
-typedef RiftLookupTexture::Ptr RiftLookupTexturePtr;
-
 class RiftManagerApp {
 protected:
   ovrHmd hmd;
@@ -212,7 +209,10 @@ public:
 
   virtual void viewport(ovrEyeType eye) {
     glm::uvec2 viewportPosition(eye == ovrEye_Left ? 0 : windowSize.x / 2, 0);
-    gl::viewport(viewportPosition, glm::uvec2(windowSize.x / 2, windowSize.y));
+    oglplus::Context().Viewport(
+      viewportPosition.x, viewportPosition.y,
+      windowSize.x / 2, windowSize.y
+    );
   }
 
 
@@ -235,7 +235,7 @@ protected:
 
 private:
   ovrEyeRenderDesc eyeRenderDescs[2];
-  gl::FrameBufferWrapper frameBuffers[2];
+//  gl::FrameBufferWrapper frameBuffers[2];
   glm::mat4 projections[2];
   glm::mat4 orthoProjections[2];
   ovrEyeType currentEye;

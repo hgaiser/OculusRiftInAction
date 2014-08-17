@@ -19,10 +19,6 @@
 
 #pragma once
 
-#include "GlBuffers.h"
-#include <glm/glm.hpp>
-#include <vector>
-#include <string>
 #include "Font.h"
 
 class GlUtils {
@@ -34,6 +30,8 @@ public:
   static void drawAngleTicks();
   static void draw3dGrid();
   static void draw3dVector(glm::vec3 vec, const glm::vec3 & col);
+
+#if 0
 
   static gl::GeometryPtr getColorCubeGeometry();
   static gl::GeometryPtr getCubeGeometry();
@@ -152,7 +150,7 @@ public:
   static void renderGeometry(
       const gl::GeometryPtr & geometry,
       gl::ProgramPtr program);
-
+#endif
   static void renderSkybox(Resource firstResource);
   static void renderBunny();
   static void renderArtificialHorizon( float alpha = 1.0f );
@@ -184,6 +182,7 @@ public:
   static const glm::vec3 ONE;
   static const glm::vec3 UP;
 };
+
 
 struct Colors {
   static const glm::vec3 gray;

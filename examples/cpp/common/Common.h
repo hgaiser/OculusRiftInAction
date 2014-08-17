@@ -49,6 +49,7 @@
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtx/norm.hpp>
 
+#include <GL/glew.h>
 
 #pragma warning( disable : 4068 4244)
 #include <oglplus/all.hpp>
@@ -60,7 +61,6 @@
 #pragma warning( default : 4068 4244)
 
 
-#include <GL/glew.h>
 
 #include <OVR_CAPI.h>
 #include <OVR_CAPI_GL.h>
@@ -164,6 +164,7 @@ public:
 #include "Font.h"
 #include "Files.h"
 
+#include "GlStacks.h"
 #include "GlMesh.h"
 #include "GlUtils.h"
 #include "GlfwApp.h"
