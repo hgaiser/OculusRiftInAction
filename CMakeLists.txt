@@ -1,26 +1,23 @@
-# Required for statically linking the MSVC runtime
-set(CMAKE_USER_MAKE_RULES_OVERRIDE
-   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
-set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
-   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
-
-project(OculusRiftExamples)
+project(eva_hmd)
 cmake_minimum_required(VERSION 2.8)
 include (GenerateExportHeader)
 
+catkin_package()
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_CXX_FLAGS "-std=c++11")
 
 # First for the generic no-config case (e.g. with mingw)
-set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output )
-set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output )
-set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output )
+#set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output )
+#set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output )
+#set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output )
 
 # Second, for multi-config builds (e.g. msvc)
 foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
     string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
-    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/output )
-    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/output )
-    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/output )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_CURRENT_BINARY_DIR}/output )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_CURRENT_BINARY_DIR}/output )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_CURRENT_BINARY_DIR}/output )
 endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 # Comment out to disable the debug build
@@ -45,7 +42,7 @@ else()
 endif()
 
 # Verbosity is good, especially if a command fails
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 set(TARGET_ARCHITECTURE "x64")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -76,7 +73,7 @@ endif()
 #
 # Oculus VR SDK dependency 
 #
-set(OVR_DIR ${CMAKE_SOURCE_DIR}/libraries/OculusSDK/LibOVR)
+set(OVR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libraries/OculusSDK/LibOVR)
 # Check for the existence of the LibOVR project.  If it's missing, the 
 # submodule probably hasn't been checked out.
 if (NOT(EXISTS ${OVR_DIR} AND IS_DIRECTORY ${OVR_DIR}))
@@ -93,7 +90,7 @@ set_target_properties(OculusVR PROPERTIES FOLDER "3rdparty")
 add_definitions(-DGLEW_STATIC)
 add_subdirectory(libraries/glew)
 set_target_properties(glew PROPERTIES FOLDER "3rdparty")
-include_directories(${CMAKE_SOURCE_DIR}/libraries/glew/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/glew/include)
 
 add_subdirectory(libraries/OculusSDK/Bindings/C)
 set_target_properties(OVR_C PROPERTIES FOLDER "3rdparty")
@@ -116,18 +113,18 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation")
 set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target")
 add_subdirectory(libraries/glfw)
 set_target_properties(glfw PROPERTIES FOLDER "3rdparty")
-include_directories(${CMAKE_SOURCE_DIR}/libraries/glfw/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/glfw/include)
 list(APPEND EXAMPLE_LIBS glfw ${GLFW_LIBRARIES})
 
 # OpenCTM - a 3D mesh compression
 add_subdirectory(libraries/OpenCTM)
 set_target_properties(OpenCTM PROPERTIES FOLDER "3rdparty")
-include_directories(${CMAKE_SOURCE_DIR}/libraries/OpenCTM)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/OpenCTM)
 list(APPEND EXAMPLE_LIBS OpenCTM)
 
-find_package( Boost QUIET)
+find_package( Boost REQUIRED COMPONENTS system thread)
 include_directories(${Boost_INCLUDE_DIRS})
-LINK_DIRECTORIES( C:\\dev\\boost_1_55_0_32\\lib32-msvc-12.0 )
+list(APPEND EXAMPLE_LIBS ${Boost_LIBRARIES})
 
 # Computer vision library with advanced image loading and manipulation 
 # functionality.  
@@ -148,9 +145,9 @@ else()
     if((WIN32 OR APPLE))
         # zlib
         add_subdirectory(libraries/zlib)
-        set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/libraries/zlib)
-        include_directories(${CMAKE_BINARY_DIR}/libraries/zlib)
-        include_directories(${CMAKE_SOURCE_DIR}/libraries/zlib)
+        set(ZLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libraries/zlib)
+        include_directories(${CMAKE_CURRENT_BINARY_DIR}/libraries/zlib)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/zlib)
         list(APPEND EXAMPLE_LIBS zlib)
     
         # png
@@ -158,8 +155,8 @@ else()
         set(PNG_TESTS OFF CACHE BOOL "Build PNG tests")
         set(PNG_SHARED OFF CACHE BOOL "Build PNG shared library")
         add_subdirectory(libraries/libpng)
-        include_directories(${CMAKE_SOURCE_DIR}/libraries/libpng)
-        include_directories(${CMAKE_BINARY_DIR}/libraries/libpng)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/libpng)
+        include_directories(${CMAKE_CURRENT_BINARY_DIR}/libraries/libpng)
         list(APPEND EXAMPLE_LIBS png)
         set_target_properties(zlib PROPERTIES FOLDER "3rdparty")
         set_target_properties(png PROPERTIES FOLDER "3rdparty")
@@ -179,14 +176,14 @@ list(APPEND EXAMPLE_LIBS ${CMAKE_THREAD_LIBS_INIT} )
 #
 add_subdirectory(libraries/gl)
 set_target_properties(gl PROPERTIES FOLDER "Examples/Shared")
-include_directories(${CMAKE_SOURCE_DIR}/libraries/gl)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/gl)
 
 
 ###############################################################################
 #
 # GLM - Vector / matrix header only math library based on the syntax of GLSL
 #
-include_directories(${CMAKE_SOURCE_DIR}/libraries/glm)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/glm)
 
 ###############################################################################
 #
@@ -204,7 +201,7 @@ include_directories(${CMAKE_SOURCE_DIR}/libraries/glm)
 add_subdirectory(resources)
 set_target_properties(ExampleResources PROPERTIES FOLDER "Examples/Shared")
 include_directories(resources/cpp)
-include_directories(${CMAKE_BINARY_DIR}/resources)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/resources)
 list(APPEND EXAMPLE_LIBS ExampleResources)
 
 ###############################################################################

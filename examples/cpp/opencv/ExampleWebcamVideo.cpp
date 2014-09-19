@@ -129,13 +129,16 @@ public:
 
 class WebcamHandler : public CaptureHandler<cv::Mat> {
 private:
-  cv::VideoCapture videoCapture{ 1 };
+  cv::VideoCapture videoCapture;
   glm::uvec2 imageSize;
 
 protected:
   double lastFrameTimes[2];
 
   WebcamHandler() {
+    if (!videoCapture.open(CV_CAP_ANY)) {
+      FAIL("Failed to open the capture device.");
+    }
     if (!videoCapture.grab()) {
       FAIL("Failed grab");
     }
