@@ -28,6 +28,8 @@
 #include <CoreGraphics/CGDisplayConfiguration.h>
 #endif
 
+#include <ros/ros.h>
+
 glm::uvec2 getSize(GLFWmonitor * monitor) {
   const GLFWvidmode * mode = glfwGetVideoMode(monitor);
   return glm::uvec2(mode->width, mode->height);
@@ -313,7 +315,7 @@ int GlfwApp::run() {
 
   int framecount = 0;
   long start = Platform::elapsedMillis();
-  while (!glfwWindowShouldClose(window)) {
+  while (!glfwWindowShouldClose(window) && ros::ok()) {
     glfwPollEvents();
     update();
     draw();

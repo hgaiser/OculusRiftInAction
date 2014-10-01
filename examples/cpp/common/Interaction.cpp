@@ -43,20 +43,20 @@ void CameraControl::enableJoystick(bool enable) {
 void translateCamera(glm::mat4 & camera, const glm::vec3 & delta) {
   // SAY("Translating %01.3f %01.3f %01.3f", delta.x, delta.y, delta.z);
   // Bring the vector into camera space coordinates
-  glm::vec3 eyeDelta = glm::quat(camera) * delta;
-  camera = glm::translate(glm::mat4(), eyeDelta) * camera;
+  //glm::vec3 eyeDelta = glm::quat(camera) * delta;
+  //camera = glm::translate(glm::mat4(), eyeDelta) * camera;
 }
 
 void rotateCamera(glm::mat4 & camera, const glm::quat & rot) {
-  camera = camera * glm::mat4_cast(rot);
+  //camera = camera * glm::mat4_cast(rot);
 }
 
 
 void recompose(glm::mat4 & camera) {
   glm::vec4 t4 = camera[3];
   t4 /= t4.w;
-  camera = glm::mat4_cast(glm::normalize(glm::quat(camera)));
-  camera[3] = t4;
+  //camera = glm::mat4_cast(glm::normalize(glm::quat(camera)));
+  //camera[3] = t4;
 }
 
 #ifdef HAVE_SIXENSE

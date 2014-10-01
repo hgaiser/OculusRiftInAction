@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+  <name>eva_hmd</name>
+  <version>0.0.0</version>
+  <description>The eva_hmd package</description>
+
+  <maintainer email="hansgaiser@todo.todo">hansgaiser</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <run_depend>roscpp</run_depend>
+  <build_depend>eva_image_server</build_depend>
+
+  <export>
+  </export>
+</package>

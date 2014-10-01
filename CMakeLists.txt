@@ -2,6 +2,9 @@ project(eva_hmd)
 cmake_minimum_required(VERSION 2.8)
 include (GenerateExportHeader)
 
+find_package(catkin REQUIRED COMPONENTS roscpp eva_image_server tf)
+include_directories(${catkin_INCLUDE_DIRS})
+
 catkin_package()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -102,6 +105,8 @@ set(EXAMPLE_LIBS OVR_C )
 #
 # Non-Oculus third party dependencies 
 #
+
+list(APPEND EXAMPLE_LIBS ${catkin_LIBRARIES})
 
 # Cross platform access to shader functionality
 list(APPEND EXAMPLE_LIBS glew)
@@ -210,3 +215,4 @@ list(APPEND EXAMPLE_LIBS ExampleResources)
 #
 add_subdirectory(examples/cpp)
 
+install(PROGRAMS scripts/hmd_to_head.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

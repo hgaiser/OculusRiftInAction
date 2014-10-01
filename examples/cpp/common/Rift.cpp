@@ -119,12 +119,12 @@ void RiftApp::draw() {
       ovrPosef renderPose = ovrHmd_BeginEyeRender(hmd, eye);
       // Set up the per-eye modelview matrix
       {
-        // Apply the head pose
-        glm::mat4 m = Rift::fromOvr(renderPose);
-        mv.preMultiply(glm::inverse(m));
-        // Apply the per-eye offset
-        glm::vec3 eyeOffset = Rift::fromOvr(erd.ViewAdjust);
-        mv.preMultiply(glm::translate(glm::mat4(), eyeOffset));
+//         // Apply the head pose
+//         glm::mat4 m = Rift::fromOvr(renderPose);
+//         mv.preMultiply(glm::inverse(m));
+//         // Apply the per-eye offset
+//         glm::vec3 eyeOffset = Rift::fromOvr(erd.ViewAdjust);
+//         mv.preMultiply(glm::translate(glm::mat4(), eyeOffset));
       }
 
       // Render the scene to an offscreen buffer
