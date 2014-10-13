@@ -237,8 +237,10 @@ protected:
 	float webcamLatency{ 0.361f };
 	glm::quat webcamOrientation;
 	time_t lastWebcamImage;
-	glm::vec4 k{ 5.37f, 3.83f, -4.2f, 25.0f};
-	float scale{ 0.69f };
+	//glm::vec4 k{ 5.37f, 3.83f, -4.2f, 25.0f};
+	glm::vec4 k{ 22.47f, 0.53f, -4.1f, 5.7f};
+	//float scale{ 0.69f };
+	float scale{ 0.07f };
 	tf::TransformBroadcaster transformBroadcaster;
 
 public:
@@ -261,10 +263,56 @@ public:
 		switch (key) {
 		case GLFW_KEY_LEFT_BRACKET:
 			scale += (mods & GLFW_MOD_SHIFT) ? 0.1f : 0.01f;
+			ROS_INFO_STREAM("Scale: " << scale);
 			return;
 		case GLFW_KEY_RIGHT_BRACKET:
 			scale -= (mods & GLFW_MOD_SHIFT) ? 0.1f : 0.01f;
+			ROS_INFO_STREAM("Scale: " << scale);
 			return;
+
+		case GLFW_KEY_A:
+			k[0] += 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
+		case GLFW_KEY_Z:
+			k[0] -= 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
+
+		case GLFW_KEY_S:
+			k[1] += 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
+		case GLFW_KEY_X:
+			k[1] -= 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
+
+		case GLFW_KEY_D:
+			k[2] += 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
+		case GLFW_KEY_C:
+			k[2] -= 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
+
+		case GLFW_KEY_F:
+			k[3] += 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
+		case GLFW_KEY_V:
+			k[3] -= 0.1;
+			videoGeometry = DistortionHelper(k).createDistortionMesh(glm::uvec2(64, 64), glm::aspect(getCaptureSize()));
+			ROS_INFO_STREAM("Vector k: [" << k[0] << ", " << k[1] << ", " << k[2] << ", " << k[3] << "]");
+			break;
 
 #ifdef USE_RIFT
 		case GLFW_KEY_P:
