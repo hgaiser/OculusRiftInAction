@@ -238,9 +238,9 @@ protected:
 	glm::quat webcamOrientation;
 	time_t lastWebcamImage;
 	//glm::vec4 k{ 5.37f, 3.83f, -4.2f, 25.0f};
-	glm::vec4 k{ 22.47f, 0.53f, -4.1f, 5.7f};
+	glm::vec4 k{ 22.97f, 3.63f, -3.6f, 1.2f};
 	//float scale{ 0.69f };
-	float scale{ 0.07f };
+	float scale{ 0.05f };
 	tf::TransformBroadcaster transformBroadcaster;
 
 public:
